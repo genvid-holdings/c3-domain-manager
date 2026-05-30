@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+@CONVENTIONS.md
+
 ## What this is
 
 `c3-domain-manager` analyzes Construct 3 projects through a domain-driven-design lens. It reads a `domain-config.json` from the *target* project's root (the current working directory, **not** this repo), classifies the project's `eventSheets/`, `layouts/`, and `scripts/` files into named domains, then produces a markdown domain index, health/coupling metrics, boundary validation, glossary collision checks, and a context map. The same capabilities are exposed both as a CLI and as an MCP server (stdio).
@@ -21,22 +23,17 @@ Run a single test file: `npx mocha --timeout 5000 --import=tsx --require ./test/
 
 Note: scripts are invoked with `npm` locally, but CI uses `pnpm` for the same script names.
 
-## Dependency setup (required before install)
+## Key dependencies
 
-Two dependencies — `genvid-mcp-utils` and `c3source` — are private leaf packages installed from local tarballs (`"file:.packages/*.tgz"`), not from a registry. They are **not** in the repo (`.packages/` is gitignored). Fetch them before `npm install`:
+Two dependencies are published public packages on npm, installed normally via `npm install` (no special setup):
 
-```bash
-npm run download-deps   # az CLI must be logged in with Azure Blob Storage access
-```
-
-`scripts/download-deps.sh` reads `name=version` lines from `.packages-version` and pulls `<name>/tags/<version>/<name>-<version>.tgz` from the `cordova` blob container into `.packages/<name>.tgz`. If you bump a dependency, edit `.packages-version` and delete the stale `.packages/*.tgz` (the script skips files that already exist).
-
-`c3source` provides the Construct 3 file walkers (`find_all_eventsheets_path`, `find_all_layouts_path`) and the `EventSheet`/`Layout` types. `genvid-mcp-utils` provides MCP plumbing (`ReadWriteLock`, `ExpectedChanges`, `paginateText`, `exposeDocs`, `Logger`).
+`@genvid/c3source` provides the Construct 3 file walkers (`find_all_eventsheets_path`, `find_all_layouts_path`) and the `EventSheet`/`Layout` types. `@genvid/mcp-utils` provides MCP plumbing (`ReadWriteLock`, `ExpectedChanges`, `paginateText`, `exposeDocs`, `Logger`).
 
 ## TypeScript / module setup
 
 - Pure ESM (`"type": "module"`), `NodeNext` resolution, Node >= 22. Relative imports **must** use `.js` extensions even though sources are `.ts`.
 - In development the package entry points resolve to `src/*.ts` directly (run via `tsx`). `publishConfig` swaps `main`/`types`/`exports` over to the compiled `dist/*.js` at publish time — so the published artifact and the dev artifact differ.
+- **Publish pitfall:** before shipping, verify the packed tarball's `package.json` has `exports`/`main`/`types` pointing at `./dist/...`, not `./src/*.ts`. `npm publish`/`npm pack` (npm ≥7) applies the `publishConfig` field overrides; `pnpm pack`/`pnpm publish` may *not* unless configured — and a package that ships dev `src/` paths while bundling only `dist/` is unresolvable under `NodeNext` (this is exactly what broke `@genvid/c3source@0.3.0`, fixed in 0.3.1).
 - Two tsconfigs: `tsconfig.json` (composite, `src/` only, emits `dist/`) drives the build; `tsconfig.test.json` (`noEmit`, includes `test/`) drives `typecheck`.
 
 ## Architecture
