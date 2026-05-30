@@ -31,6 +31,7 @@ Two dependencies are published public packages on npm, installed normally via `n
 
 - Pure ESM (`"type": "module"`), `NodeNext` resolution, Node >= 22. Relative imports **must** use `.js` extensions even though sources are `.ts`.
 - In development the package entry points resolve to `src/*.ts` directly (run via `tsx`). `publishConfig` swaps `main`/`types`/`exports` over to the compiled `dist/*.js` at publish time — so the published artifact and the dev artifact differ.
+- **Publish pitfall:** before shipping, verify the packed tarball's `package.json` has `exports`/`main`/`types` pointing at `./dist/...`, not `./src/*.ts`. `npm publish`/`npm pack` (npm ≥7) applies the `publishConfig` field overrides; `pnpm pack`/`pnpm publish` may *not* unless configured — and a package that ships dev `src/` paths while bundling only `dist/` is unresolvable under `NodeNext` (this is exactly what broke `@genvid/c3source@0.3.0`, fixed in 0.3.1).
 - Two tsconfigs: `tsconfig.json` (composite, `src/` only, emits `dist/`) drives the build; `tsconfig.test.json` (`noEmit`, includes `test/`) drives `typecheck`.
 
 ## Architecture
