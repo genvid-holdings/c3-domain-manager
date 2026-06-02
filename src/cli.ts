@@ -2,6 +2,7 @@
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { generateDomainIndex } from "./domain/domainGenerator.js";
@@ -11,6 +12,11 @@ import type { DomainConfig } from "./domain/types.js";
 const PROJECT_ROOT = process.cwd();
 const EXTRACTED_DIR = path.join(PROJECT_ROOT, "extracted");
 const CONFIG_PATH = path.join(PROJECT_ROOT, "domain-config.json");
+
+// Resolve this package's own package.json relative to the compiled module
+// (dist/cli.js → ../package.json), NOT process.cwd() which is the target project.
+const PKG_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "package.json");
+const { version: PKG_VERSION } = JSON.parse(readFileSync(PKG_PATH, "utf-8")) as { version: string };
 
 yargs(hideBin(process.argv))
   .command(
@@ -62,5 +68,6 @@ yargs(hideBin(process.argv))
   )
   .demandCommand(1, "Please specify a subcommand. Use --help for available commands.")
   .strict()
+  .version(PKG_VERSION)
   .help()
   .parse();
