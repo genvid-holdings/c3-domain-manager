@@ -23,8 +23,13 @@ git push origin vX.Y.Z                    # this push triggers the publish workf
 ## Step by step
 
 1. **Bump the version.** Choose the bump per semver — patch (`0.1.2 → 0.1.3`) for a
-   bug fix, minor for a backward-compatible feature. Update **three** locations
-   (a bare `npm version` would do this, but see the note below on why we do it by hand):
+   bug fix, minor for a backward-compatible feature. **At `0.x`, a breaking change to
+   the public API takes a minor bump even when the work is a bug fix** — removing or
+   renaming an exported function/type (anything re-exported from `src/index.ts`) is
+   the pre-1.0 "breaking" signal. Example: `0.1.3 → 0.2.0` for issue #5, which fixed
+   the extraction by retiring the public `extractIncludes`/`extractFunctions` exports.
+   Update **three** locations (a bare `npm version` would do this, but see the note
+   below on why we do it by hand):
    - `package.json` → `"version"`
    - `package-lock.json` → the top-level `"version"`
    - `package-lock.json` → `packages."".version` (the root package entry, ~line 9)
@@ -85,6 +90,11 @@ git push origin vX.Y.Z                    # this push triggers the publish workf
   convention. Doing it by hand keeps the history consistent. If you prefer the tool:
   `npm version patch -m "chore: Release %s"` gets the message but still creates an
   annotated tag and omits the trailer.
+- **If the version bump already landed with the feature/fix branch**, the release step
+  is just *tag the merge commit* — there's no need for a separate `chore: Release X.Y.Z`
+  commit. The tag publishes whatever `main` points at, and `main` already carries the
+  bumped version. (This is how issue #5 shipped: `package.json`/`package-lock.json` were
+  bumped to `0.2.0` in the fix branch, so releasing it is a one-step `git tag v0.2.0`.)
 - **A republish of an already-published version is rejected by npm.** If the publish
   workflow fails *after* the version was published, bump to the next patch rather than
   retrying the same version.
