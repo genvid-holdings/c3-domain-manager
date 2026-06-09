@@ -4,7 +4,7 @@ import { z } from "zod";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ReadWriteLock, ExpectedChanges, paginateText, exposeDocs, loadProjectConfig, isMcpError, READ_ONLY, REGENERATE, MUTATE } from "@genvid/mcp-utils";
+import { ReadWriteLock, ExpectedChanges, paginateText, exposeDocs, loadProjectConfig, isMcpError, mcpContent, READ_ONLY, REGENERATE, MUTATE } from "@genvid/mcp-utils";
 import type { Logger } from "@genvid/mcp-utils";
 import { formatDomainConfig } from "../domain/formatting.js";
 import type { DomainConfigSection } from "../domain/formatting.js";
@@ -312,8 +312,7 @@ server.registerTool(
       const parts: string[] = [];
       if (added.length > 0) parts.push(`Added ${added.length}:\n${added.join("\n")}`);
       if (updated.length > 0) parts.push(`Updated ${updated.length}:\n${updated.join("\n")}`);
-      parts.push(`txId: ${txId}`);
-      return { content: [{ type: "text", text: parts.join("\n\n") }] };
+      return mcpContent(parts.join("\n\n"), `txId: ${txId}`);
     })
 );
 
@@ -356,9 +355,7 @@ server.registerTool(
         return { content: [{ type: "text", text: "None of the specified paths were in overrides." }] };
       }
       writeDomainConfig(config);
-      return {
-        content: [{ type: "text", text: `Removed ${removed.length}:\n${removed.join("\n")}\n\ntxId: ${txId}` }],
-      };
+      return mcpContent(`Removed ${removed.length}:\n${removed.join("\n")}`, `txId: ${txId}`);
     })
 );
 
