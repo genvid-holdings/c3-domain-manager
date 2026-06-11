@@ -177,6 +177,8 @@ export function computeDomainData(
   // Classify and parse eventSheets
   const sheetDomainLookup = new Map<string, string>(); // sheetName → domainName
   const rawIncludes = new Map<string, string[]>(); // domainName → raw include sheet names
+  const varDeclIndex = new Map<string, Set<string>>(); // variable name → set of declaring domains
+  const rawRefs = new Map<string, string[]>(); // domainName → referenced variable names (raw)
 
   for (const sheetPath of eventSheetPaths) {
     const relPath = path.relative(rootDir, sheetPath).replace(/\\/g, "/");
@@ -215,6 +217,20 @@ export function computeDomainData(
       const existing = rawIncludes.get(domain) ?? [];
       existing.push(...includes);
       rawIncludes.set(domain, existing);
+    }
+
+    // Index top-level variable declarations: variable name → declaring domains
+    for (const varName of extractEventVarDecls(sheet)) {
+      if (!varDeclIndex.has(varName)) varDeclIndex.set(varName, new Set());
+      varDeclIndex.get(varName)!.add(domain);
+    }
+
+    // Accumulate event-variable references for cross-domain resolution later
+    const refs = extractEventVarRefs(sheet);
+    if (refs.length > 0) {
+      const existing = rawRefs.get(domain) ?? [];
+      existing.push(...refs);
+      rawRefs.set(domain, existing);
     }
   }
 
@@ -280,6 +296,31 @@ export function computeDomainData(
           if (!targetList.includes(includedSheetName)) {
             targetList.push(includedSheetName);
           }
+        }
+      }
+    }
+  }
+
+  // Resolve cross-domain dependencies from event-variable references.
+  // A reference resolves to EVERY domain that declares a top-level variable of that
+  // name (attribute-to-all on collision); same-domain and unresolved names are skipped.
+  for (const [domainName, domainData] of domainDataMap) {
+    const refs = rawRefs.get(domainName) ?? [];
+    for (const varName of refs) {
+      const declaringDomains = varDeclIndex.get(varName);
+      if (!declaringDomains) continue; // unresolved — no global declaration
+      for (const targetDomain of declaringDomains) {
+        if (targetDomain === domainName) continue; // same-domain — not cross-domain
+        // referencesFrom: domainName → targetDomain (var names)
+        if (!domainData.referencesFrom.has(targetDomain)) domainData.referencesFrom.set(targetDomain, []);
+        const out = domainData.referencesFrom.get(targetDomain)!;
+        if (!out.includes(varName)) out.push(varName);
+        // referencedBy on the target
+        const targetData = domainDataMap.get(targetDomain);
+        if (targetData) {
+          if (!targetData.referencedBy.has(domainName)) targetData.referencedBy.set(domainName, []);
+          const inc = targetData.referencedBy.get(domainName)!;
+          if (!inc.includes(varName)) inc.push(varName);
         }
       }
     }

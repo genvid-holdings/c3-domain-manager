@@ -137,6 +137,250 @@ describe("computeDomainData", () => {
     assert.equal(result.domains[0].layouts[0].path, "layouts/Login/LoginLayout.json");
     assert.deepEqual(result.unclassified, []);
   });
+
+  it("cross-domain reference creates an edge in referencesFrom and referencedBy", () => {
+    // Domain B declares variable "score"; domain A references it
+    createFile(
+      tmpDir,
+      "eventSheets/GameLogic/GameLogic.json",
+      JSON.stringify({
+        name: "GameLogic/GameLogic",
+        sid: 1,
+        events: [
+          { eventType: "variable", name: "score", type: "number", initialValue: "0", isStatic: false, isConstant: false, sid: 10 },
+        ],
+      }),
+    );
+    createFile(
+      tmpDir,
+      "eventSheets/UI/UIEvents.json",
+      JSON.stringify({
+        name: "UI/UIEvents",
+        sid: 2,
+        events: [
+          {
+            eventType: "block",
+            sid: 20,
+            conditions: [
+              { id: "compare-eventvar", objectClass: "System", sid: 21, parameters: { variable: "score" } },
+            ],
+            actions: [],
+          },
+        ],
+      }),
+    );
+
+    const config: DomainConfig = {
+      domains: {
+        GameDomain: { description: "Game", eventSheetDirs: ["GameLogic"] },
+        UIDomain: { description: "UI", eventSheetDirs: ["UI"] },
+      },
+    };
+
+    const result = computeDomainData(tmpDir, config);
+    const gameDomain = result.domains.find((d) => d.name === "GameDomain")!;
+    const uiDomain = result.domains.find((d) => d.name === "UIDomain")!;
+
+    assert.isTrue(uiDomain.referencesFrom.has("GameDomain"), "UIDomain.referencesFrom should have GameDomain");
+    assert.deepEqual(uiDomain.referencesFrom.get("GameDomain"), ["score"]);
+    assert.isTrue(gameDomain.referencedBy.has("UIDomain"), "GameDomain.referencedBy should have UIDomain");
+    assert.deepEqual(gameDomain.referencedBy.get("UIDomain"), ["score"]);
+  });
+
+  it("collision attributes the reference to all declaring domains", () => {
+    // Both domain B and domain C declare "score"; domain A references it → edges to both
+    createFile(
+      tmpDir,
+      "eventSheets/DomainB/Events.json",
+      JSON.stringify({
+        name: "DomainB/Events",
+        sid: 1,
+        events: [
+          { eventType: "variable", name: "score", type: "number", initialValue: "0", isStatic: false, isConstant: false, sid: 10 },
+        ],
+      }),
+    );
+    createFile(
+      tmpDir,
+      "eventSheets/DomainC/Events.json",
+      JSON.stringify({
+        name: "DomainC/Events",
+        sid: 2,
+        events: [
+          { eventType: "variable", name: "score", type: "number", initialValue: "0", isStatic: false, isConstant: false, sid: 20 },
+        ],
+      }),
+    );
+    createFile(
+      tmpDir,
+      "eventSheets/DomainA/Events.json",
+      JSON.stringify({
+        name: "DomainA/Events",
+        sid: 3,
+        events: [
+          {
+            eventType: "block",
+            sid: 30,
+            conditions: [
+              { id: "compare-eventvar", objectClass: "System", sid: 31, parameters: { variable: "score" } },
+            ],
+            actions: [],
+          },
+        ],
+      }),
+    );
+
+    const config: DomainConfig = {
+      domains: {
+        DomainA: { description: "A", eventSheetDirs: ["DomainA"] },
+        DomainB: { description: "B", eventSheetDirs: ["DomainB"] },
+        DomainC: { description: "C", eventSheetDirs: ["DomainC"] },
+      },
+    };
+
+    const result = computeDomainData(tmpDir, config);
+    const domainA = result.domains.find((d) => d.name === "DomainA")!;
+
+    assert.isTrue(domainA.referencesFrom.has("DomainB"), "DomainA.referencesFrom should have DomainB");
+    assert.isTrue(domainA.referencesFrom.has("DomainC"), "DomainA.referencesFrom should have DomainC");
+    assert.deepEqual(domainA.referencesFrom.get("DomainB"), ["score"]);
+    assert.deepEqual(domainA.referencesFrom.get("DomainC"), ["score"]);
+  });
+
+  it("unresolved variable reference produces no edge", () => {
+    // Domain A references "ghost" which is declared nowhere
+    createFile(
+      tmpDir,
+      "eventSheets/DomainA/Events.json",
+      JSON.stringify({
+        name: "DomainA/Events",
+        sid: 1,
+        events: [
+          {
+            eventType: "block",
+            sid: 10,
+            conditions: [
+              { id: "compare-eventvar", objectClass: "System", sid: 11, parameters: { variable: "ghost" } },
+            ],
+            actions: [],
+          },
+        ],
+      }),
+    );
+
+    const config: DomainConfig = {
+      domains: {
+        DomainA: { description: "A", eventSheetDirs: ["DomainA"] },
+        DomainB: { description: "B", eventSheetDirs: ["DomainB"] },
+      },
+    };
+
+    const result = computeDomainData(tmpDir, config);
+    const domainA = result.domains.find((d) => d.name === "DomainA")!;
+
+    assert.equal(domainA.referencesFrom.size, 0, "no edge for unresolved variable");
+  });
+
+  it("same-domain declare-and-reference produces no edge", () => {
+    // A single domain both declares and references "score"
+    createFile(
+      tmpDir,
+      "eventSheets/DomainA/Events.json",
+      JSON.stringify({
+        name: "DomainA/Events",
+        sid: 1,
+        events: [
+          { eventType: "variable", name: "score", type: "number", initialValue: "0", isStatic: false, isConstant: false, sid: 10 },
+          {
+            eventType: "block",
+            sid: 20,
+            conditions: [
+              { id: "compare-eventvar", objectClass: "System", sid: 21, parameters: { variable: "score" } },
+            ],
+            actions: [],
+          },
+        ],
+      }),
+    );
+
+    const config: DomainConfig = {
+      domains: {
+        DomainA: { description: "A", eventSheetDirs: ["DomainA"] },
+      },
+    };
+
+    const result = computeDomainData(tmpDir, config);
+    const domainA = result.domains.find((d) => d.name === "DomainA")!;
+
+    assert.equal(domainA.referencesFrom.size, 0, "same-domain ref produces no edge");
+    assert.equal(domainA.referencedBy.size, 0, "same-domain ref produces no referencedBy edge");
+  });
+
+  it("duplicate references across sheets are deduped in the edge payload", () => {
+    // Domain A has two sheets both referencing "score"; domain B declares it — payload is ["score"] (length 1)
+    createFile(
+      tmpDir,
+      "eventSheets/DomainB/Events.json",
+      JSON.stringify({
+        name: "DomainB/Events",
+        sid: 1,
+        events: [
+          { eventType: "variable", name: "score", type: "number", initialValue: "0", isStatic: false, isConstant: false, sid: 10 },
+        ],
+      }),
+    );
+    createFile(
+      tmpDir,
+      "eventSheets/DomainA/Sheet1.json",
+      JSON.stringify({
+        name: "DomainA/Sheet1",
+        sid: 2,
+        events: [
+          {
+            eventType: "block",
+            sid: 20,
+            conditions: [
+              { id: "compare-eventvar", objectClass: "System", sid: 21, parameters: { variable: "score" } },
+            ],
+            actions: [],
+          },
+        ],
+      }),
+    );
+    createFile(
+      tmpDir,
+      "eventSheets/DomainA/Sheet2.json",
+      JSON.stringify({
+        name: "DomainA/Sheet2",
+        sid: 3,
+        events: [
+          {
+            eventType: "block",
+            sid: 30,
+            conditions: [
+              { id: "compare-eventvar", objectClass: "System", sid: 31, parameters: { variable: "score" } },
+            ],
+            actions: [],
+          },
+        ],
+      }),
+    );
+
+    const config: DomainConfig = {
+      domains: {
+        DomainA: { description: "A", eventSheetDirs: ["DomainA"] },
+        DomainB: { description: "B", eventSheetDirs: ["DomainB"] },
+      },
+    };
+
+    const result = computeDomainData(tmpDir, config);
+    const domainA = result.domains.find((d) => d.name === "DomainA")!;
+
+    assert.isTrue(domainA.referencesFrom.has("DomainB"));
+    const payload = domainA.referencesFrom.get("DomainB")!;
+    assert.equal(payload.length, 1, "deduplicated to a single entry");
+    assert.deepEqual(payload, ["score"]);
+  });
 });
 
 describe("loadConfig", () => {
