@@ -17,6 +17,7 @@ git commit -m "chore: Release X.Y.Z"     # see message shape below
 git tag vX.Y.Z                            # lightweight tag — matches recent convention
 git push origin main
 git push origin vX.Y.Z                    # this push triggers the publish workflow
+# 4. After it publishes: file the downstream plugin update request (step 7).
 ```
 
 ## Step by step
@@ -80,6 +81,19 @@ git push origin vX.Y.Z                    # this push triggers the publish workf
    ```bash
    npx -y @genvid/c3-domain-manager@X.Y.Z --version   # prints X.Y.Z, not "unknown"
    ```
+
+7. **File the downstream plugin update request.** The `genvid-c3` plugin
+   (`genvid-holdings/claude-code-plugin-genvid-c3`) **pins** this package in
+   `plugin/.claude-plugin/plugin.json` (`mcpServers.c3-domain-manager`, e.g.
+   `@genvid/c3-domain-manager@0.3.0`) and references the pinned version in its
+   `c3-explorer` / `c3-implementer` agent docs. Every publish here therefore needs a
+   follow-up issue there to bump the pin and reconcile the tool surface. Open one with
+   `gh issue create --repo genvid-holdings/claude-code-plugin-genvid-c3`, and call out
+   any **MCP tool-surface change** (a tool added/renamed/removed) — that repo runs
+   `docs/tool-surface-reconciliation.md` and updates the `c3-explorer` `tools:`
+   allow-list off it. Example: 0.4.0 added the `validate-editor` READ_ONLY tool, so the
+   request flagged it for the allow-list (issue
+   [#12](https://github.com/genvid-holdings/claude-code-plugin-genvid-c3/issues/12)).
 
 ## Notes & gotchas
 
