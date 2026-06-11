@@ -183,8 +183,17 @@ Filter to a single domain by passing the `domain` parameter.
 
 Each domain can define a `glossary` map of terms to definitions. `glossary-check` collects all definitions across domains and reports terms that appear with different definitions in different domains. These collisions indicate shared language that may need alignment.
 
+## Editor-strictness validation
+
+`validate-editor` (CLI subcommand or MCP `READ_ONLY` tool "Validate Editor Strictness") checks whether the target project's event sheets are structurally valid from the C3 editor's perspective. It re-walks `eventSheets/` fresh from disk, attributes each sheet to a domain via `classifyFile`, and runs `@genvid/c3source`'s `validateForEditor` per sheet. Issues are grouped by sheet; sheets that match no domain classification are reported under `"(unclassified)"`.
+
+This is a read-side diagnostic only. `c3-domain-manager` never writes or modifies event sheets — the report surfaces sheets the C3 editor would refuse to import (e.g. a `variable` event missing its `comment` field, or a `group` event missing its `description`) so you can fix them in the C3 editor.
+
+Because it reads sheets directly from disk, the MCP tool does not append the stale-index warning that other read tools emit — index freshness is irrelevant to its output.
+
 ## Maintenance
 
 - After adding or renaming files, run `c3-domain-manager list-uncategorized` to confirm coverage
 - After deleting files, run `c3-domain-manager list-stale-overrides` to clean up orphaned override entries
 - Regenerate the domain index after any `domain-config.json` change: `c3-domain-manager generate`
+- To check event sheets for C3 editor compatibility: `c3-domain-manager validate-editor`

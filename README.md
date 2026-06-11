@@ -10,6 +10,7 @@ Domain-driven design analysis for Construct 3 projects. Classifies source files 
 - **Boundary validation** — detects undeclared cross-domain dependencies and forbidden dependency directions
 - **Glossary collision detection** — flags terms defined differently across domains
 - **Context map** — generates text or Mermaid diagrams of inter-domain relationships
+- **Editor-strictness validation** — reports event sheets the C3 editor would refuse to import (e.g. missing required fields on `variable` or `group` events)
 - **MCP server** — exposes all of the above as Model Context Protocol tools for AI agents
 
 ## Requirements
@@ -93,13 +94,14 @@ Run any subcommand with `--help` for full usage.
 | `generate` | Generate domain index at `extracted/domain-index/` |
 | `list-uncategorized` | List files not mapped to any domain |
 | `list-stale-overrides` | List override entries pointing to non-existent files |
+| `validate-editor` | Report event sheets the C3 editor would reject (editor-strictness validation) |
 | `server` | Start the MCP server (stdio transport) |
 
 All subcommands read `domain-config.json` from the current working directory.
 
 ## MCP server
 
-The MCP server exposes 12 tools over stdio, suitable for use with Claude or any MCP-compatible client.
+The MCP server exposes 13 tools over stdio, suitable for use with Claude or any MCP-compatible client.
 
 ### Starting the server
 
@@ -138,6 +140,7 @@ The server auto-generates the domain index on startup if `extracted/domain-index
 | `validate-boundaries` | Report undeclared cross-domain dependencies and forbidden dependency directions. |
 | `domain-health` | Compute Ca, Ce, and instability metrics per domain. |
 | `context-map` | Generate a context map in `text` or `mermaid` format. |
+| `validate-editor` | Report event sheets the C3 editor would reject. Re-walks sheets fresh from disk; never reads the cached domain index. |
 
 **Mutate tools** (modify `domain-config.json`)
 
@@ -171,6 +174,8 @@ import {
   computeDomainData,
   listUncategorized,
   listStaleOverrides,
+  validateEditorStrictness,
+  formatEditorStrictnessReport,
 } from "@genvid/c3-domain-manager";
 ```
 
@@ -188,8 +193,10 @@ Key exports from `src/index.ts`:
 | `validateBoundaries(domains, config, filter?)` | `relationships` | Check declared vs observed dependencies |
 | `computeHealth(domain)` | `health` | Ca, Ce, instability for one `DomainData` |
 | `generateContextMap(domains, config, opts)` | `contextMap` | Produce text or Mermaid context map |
+| `validateEditorStrictness(root, config, log?)` | `editorValidation` | Re-walk event sheets and return issues grouped by sheet |
+| `formatEditorStrictnessReport(report)` | `editorValidation` | Render an `EditorStrictnessReport` to text |
 
-Type definitions are in `src/domain/types.ts`: `DomainConfig`, `DomainDefinition`, `SharedSubdomainDefinition`, `DomainData`, `Relationship`, `FunctionDef`.
+Type definitions are in `src/domain/types.ts`: `DomainConfig`, `DomainDefinition`, `SharedSubdomainDefinition`, `DomainData`, `Relationship`, `FunctionDef`. Editor-validation types (`EditorStrictnessReport`, `EditorStrictnessSheetReport`) are in `src/domain/editorValidation.ts`.
 
 ## Further reading
 
