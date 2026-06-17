@@ -1,9 +1,10 @@
-import { describe, it } from "mocha";
+import { describe, it, afterEach } from "mocha";
 import { assert } from "chai";
+import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
-import { resolveLocations, NO_EXTRACTED } from "../../src/adapters/locations.js";
-import { ExpectedChanges } from "@genvid/mcp-utils";
+import { resolveLocations, resolveProjectRoot, NO_EXTRACTED } from "../../src/adapters/locations.js";
+import { ExpectedChanges, isMcpError } from "@genvid/mcp-utils";
 
 // Use a deterministic project root that is always absolute and works cross-platform.
 const root = path.resolve(os.tmpdir(), "c3dm-test-proj");
@@ -145,5 +146,87 @@ describe("resolveLocations", () => {
       const loc = resolveLocations({ config: outsideRoot }, root);
       assert.equal(path.join(loc.configDir, loc.configFileName), loc.configPath);
     });
+  });
+});
+
+describe("resolveProjectRoot", () => {
+  let tmpDir: string | undefined;
+
+  afterEach(() => {
+    if (tmpDir) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      tmpDir = undefined;
+    }
+  });
+
+  it("explicit relative projectDir resolves against cwd and returns source: explicit", () => {
+    const cwd = path.resolve(os.tmpdir(), "c3dm-pr-cwd");
+    const result = resolveProjectRoot({ projectDir: "subproject" }, cwd, {});
+    assert.isFalse(isMcpError(result));
+    const resolved = result as { path: string; source: string };
+    assert.equal(resolved.path, path.resolve(cwd, "subproject"));
+    assert.equal(resolved.source, "explicit");
+  });
+
+  it("explicit absolute projectDir is returned unchanged and returns source: explicit", () => {
+    const absPath = path.resolve(os.tmpdir(), "my-c3-project");
+    const result = resolveProjectRoot({ projectDir: absPath }, os.tmpdir(), {});
+    assert.isFalse(isMcpError(result));
+    const resolved = result as { path: string; source: string };
+    assert.equal(resolved.path, absPath);
+    assert.equal(resolved.source, "explicit");
+  });
+
+  it("no explicit, C3_PROJECT_DIR set in env (relative) resolves against cwd and returns source: env", () => {
+    const cwd = path.resolve(os.tmpdir(), "c3dm-pr-cwd2");
+    const result = resolveProjectRoot({}, cwd, { C3_PROJECT_DIR: "envsubdir" });
+    assert.isFalse(isMcpError(result));
+    const resolved = result as { path: string; source: string };
+    assert.equal(resolved.path, path.resolve(cwd, "envsubdir"));
+    assert.equal(resolved.source, "env");
+  });
+
+  it("explicit wins over C3_PROJECT_DIR env var", () => {
+    const cwd = path.resolve(os.tmpdir(), "c3dm-pr-cwd3");
+    const result = resolveProjectRoot({ projectDir: "explicit-dir" }, cwd, { C3_PROJECT_DIR: "env-dir" });
+    assert.isFalse(isMcpError(result));
+    const resolved = result as { path: string; source: string };
+    assert.equal(resolved.path, path.resolve(cwd, "explicit-dir"));
+    assert.equal(resolved.source, "explicit");
+  });
+
+  it("discovery: single child with project.c3proj returns that child with source: discovery", () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "c3dm-pr-"));
+    const childDir = path.join(tmpDir, "myproject");
+    fs.mkdirSync(childDir);
+    fs.writeFileSync(path.join(childDir, "project.c3proj"), "");
+
+    const result = resolveProjectRoot({}, tmpDir, {});
+    assert.isFalse(isMcpError(result));
+    const resolved = result as { path: string; source: string };
+    assert.equal(resolved.path, childDir);
+    assert.equal(resolved.source, "discovery");
+  });
+
+  it("0 markers under cwd returns cwd with source: cwd", () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "c3dm-pr-"));
+    const result = resolveProjectRoot({}, tmpDir, {});
+    assert.isFalse(isMcpError(result));
+    const resolved = result as { path: string; source: string };
+    assert.equal(resolved.path, tmpDir);
+    assert.equal(resolved.source, "cwd");
+  });
+
+  it("two child dirs each with project.c3proj returns an isMcpError (ambiguous)", () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "c3dm-pr-"));
+    const childA = path.join(tmpDir, "projectA");
+    const childB = path.join(tmpDir, "projectB");
+    fs.mkdirSync(childA);
+    fs.mkdirSync(childB);
+    fs.writeFileSync(path.join(childA, "project.c3proj"), "");
+    fs.writeFileSync(path.join(childB, "project.c3proj"), "");
+
+    const result = resolveProjectRoot({}, tmpDir, {});
+    assert.isTrue(isMcpError(result));
   });
 });

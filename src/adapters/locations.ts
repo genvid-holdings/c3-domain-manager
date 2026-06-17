@@ -1,12 +1,16 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
+import { resolveRootFolder, type ResolvedRoot } from "@genvid/mcp-utils";
+import { PROJECT_MANIFEST_FILE } from "@genvid/c3source";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 
 export const NO_EXTRACTED = "none";
 
 export interface LocationOptions {
   config?: string;
   extracted?: string;
+  projectDir?: string;
 }
 
 export interface ResolvedLocations {
@@ -57,4 +61,15 @@ export function resolveLocations(
     extractedEphemeral,
     configWatchKey,
   };
+}
+
+export function resolveProjectRoot(
+  opts: { projectDir?: string },
+  cwd: string = process.cwd(),
+  env: NodeJS.ProcessEnv = process.env,
+): ResolvedRoot | CallToolResult {
+  return resolveRootFolder(
+    { explicit: opts.projectDir, envVar: "C3_PROJECT_DIR", marker: PROJECT_MANIFEST_FILE, cwd },
+    env,
+  );
 }
