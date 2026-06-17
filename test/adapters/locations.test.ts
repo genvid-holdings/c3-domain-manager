@@ -208,6 +208,17 @@ describe("resolveProjectRoot", () => {
     assert.equal(resolved.source, "discovery");
   });
 
+  it("discovery: project.c3proj in cwd itself returns cwd with source: discovery", () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "c3dm-pr-"));
+    fs.writeFileSync(path.join(tmpDir, "project.c3proj"), "");
+
+    const result = resolveProjectRoot({}, tmpDir, {});
+    assert.isFalse(isMcpError(result));
+    const resolved = result as { path: string; source: string };
+    assert.equal(resolved.path, tmpDir);
+    assert.equal(resolved.source, "discovery");
+  });
+
   it("0 markers under cwd returns cwd with source: cwd", () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "c3dm-pr-"));
     const result = resolveProjectRoot({}, tmpDir, {});

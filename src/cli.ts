@@ -106,7 +106,7 @@ yargs(hideBin(process.argv))
   .option("project-dir", {
     type: "string",
     describe:
-      "Path to the C3 project root to analyze (default: auto-detected — a child directory containing project.c3proj, else the current directory). Honors the C3_PROJECT_DIR env var. Relative paths resolve from the current directory.",
+      "Path to the C3 project root to analyze (default: auto-detected — the current directory or an immediate child containing project.c3proj, else the current directory). Honors the C3_PROJECT_DIR env var. Relative paths resolve from the current directory.",
   })
   .option("config", {
     type: "string",
