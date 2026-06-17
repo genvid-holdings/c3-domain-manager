@@ -50,7 +50,7 @@ yargs(hideBin(process.argv))
     async (argv) => {
       const loc = resolveLocations({ config: argv.config as string | undefined }, PROJECT_ROOT);
       const config = await loadConfig(loc.configDir, loc.configFileName);
-      const files = listUncategorized(PROJECT_ROOT, config);
+      const files = listUncategorized(loc.projectRoot, config);
       if (files.length === 0) {
         console.log("All files are categorized.");
       } else {
@@ -66,7 +66,7 @@ yargs(hideBin(process.argv))
     async (argv) => {
       const loc = resolveLocations({ config: argv.config as string | undefined }, PROJECT_ROOT);
       const config = await loadConfig(loc.configDir, loc.configFileName);
-      const stale = listStaleOverrides(PROJECT_ROOT, config);
+      const stale = listStaleOverrides(loc.projectRoot, config);
       if (stale.length === 0) {
         console.log("No stale overrides.");
       } else {
@@ -82,7 +82,7 @@ yargs(hideBin(process.argv))
     async (argv) => {
       const loc = resolveLocations({ config: argv.config as string | undefined }, PROJECT_ROOT);
       const config = await loadConfig(loc.configDir, loc.configFileName);
-      const report = validateEditorStrictness(PROJECT_ROOT, config);
+      const report = validateEditorStrictness(loc.projectRoot, config);
       console.log(formatEditorStrictnessReport(report));
     },
   )
