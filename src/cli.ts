@@ -8,9 +8,21 @@ import { hideBin } from "yargs/helpers";
 import { generateDomainIndex, loadConfig } from "./domain/domainGenerator.js";
 import { listUncategorized, listStaleOverrides } from "./domain/domainAnalysis.js";
 import { validateEditorStrictness, formatEditorStrictnessReport } from "./domain/editorValidation.js";
-import { resolveLocations } from "./adapters/locations.js";
+import { resolveLocations, resolveProjectRoot } from "./adapters/locations.js";
+import { isMcpError } from "@genvid/mcp-utils";
 
-const PROJECT_ROOT = process.cwd();
+function resolveRootOrExit(projectDir: string | undefined): string {
+  const rooted = resolveProjectRoot({ projectDir });
+  if (isMcpError(rooted)) {
+    const msg = (rooted.content ?? [])
+      .map((c) => (typeof (c as { text?: unknown }).text === "string" ? (c as { text: string }).text : ""))
+      .join("\n")
+      .trim();
+    console.error(msg || "Failed to resolve project root.");
+    process.exit(1);
+  }
+  return rooted.path;
+}
 
 // Resolve this package's own package.json relative to the compiled module
 // (dist/cli.js → ../package.json), NOT process.cwd() which is the target project.
@@ -23,7 +35,8 @@ yargs(hideBin(process.argv))
     "Start the c3-domain-manager MCP server",
     () => {},
     async (argv) => {
-      const loc = resolveLocations({ config: argv.config as string | undefined, extracted: argv.extracted as string | undefined }, PROJECT_ROOT);
+      const projectRoot = resolveRootOrExit(argv["project-dir"] as string | undefined);
+      const loc = resolveLocations({ config: argv.config as string | undefined, extracted: argv.extracted as string | undefined }, projectRoot);
       const { startServer } = await import("./mcp/server.js");
       await startServer(loc);
     },
@@ -33,7 +46,8 @@ yargs(hideBin(process.argv))
     "Generate domain index",
     () => {},
     async (argv) => {
-      const loc = resolveLocations({ config: argv.config as string | undefined, extracted: argv.extracted as string | undefined }, PROJECT_ROOT);
+      const projectRoot = resolveRootOrExit(argv["project-dir"] as string | undefined);
+      const loc = resolveLocations({ config: argv.config as string | undefined, extracted: argv.extracted as string | undefined }, projectRoot);
       try {
         await generateDomainIndex(loc.projectRoot, loc.extractedDir, loc.configDir, loc.configFileName, console.log);
       } finally {
@@ -48,9 +62,10 @@ yargs(hideBin(process.argv))
     "List files not mapped to any domain in domain-config.json",
     () => {},
     async (argv) => {
-      const loc = resolveLocations({ config: argv.config as string | undefined }, PROJECT_ROOT);
+      const projectRoot = resolveRootOrExit(argv["project-dir"] as string | undefined);
+      const loc = resolveLocations({ config: argv.config as string | undefined }, projectRoot);
       const config = await loadConfig(loc.configDir, loc.configFileName);
-      const files = listUncategorized(PROJECT_ROOT, config);
+      const files = listUncategorized(loc.projectRoot, config);
       if (files.length === 0) {
         console.log("All files are categorized.");
       } else {
@@ -64,9 +79,10 @@ yargs(hideBin(process.argv))
     "List stale file overrides in domain-config.json",
     () => {},
     async (argv) => {
-      const loc = resolveLocations({ config: argv.config as string | undefined }, PROJECT_ROOT);
+      const projectRoot = resolveRootOrExit(argv["project-dir"] as string | undefined);
+      const loc = resolveLocations({ config: argv.config as string | undefined }, projectRoot);
       const config = await loadConfig(loc.configDir, loc.configFileName);
-      const stale = listStaleOverrides(PROJECT_ROOT, config);
+      const stale = listStaleOverrides(loc.projectRoot, config);
       if (stale.length === 0) {
         console.log("No stale overrides.");
       } else {
@@ -80,12 +96,18 @@ yargs(hideBin(process.argv))
     "Report event sheets the C3 editor would reject (editor-strictness validation)",
     () => {},
     async (argv) => {
-      const loc = resolveLocations({ config: argv.config as string | undefined }, PROJECT_ROOT);
+      const projectRoot = resolveRootOrExit(argv["project-dir"] as string | undefined);
+      const loc = resolveLocations({ config: argv.config as string | undefined }, projectRoot);
       const config = await loadConfig(loc.configDir, loc.configFileName);
-      const report = validateEditorStrictness(PROJECT_ROOT, config);
+      const report = validateEditorStrictness(loc.projectRoot, config);
       console.log(formatEditorStrictnessReport(report));
     },
   )
+  .option("project-dir", {
+    type: "string",
+    describe:
+      "Path to the C3 project root to analyze (default: auto-detected — the current directory or an immediate child containing project.c3proj, else the current directory). Honors the C3_PROJECT_DIR env var. Relative paths resolve from the current directory.",
+  })
   .option("config", {
     type: "string",
     describe:
