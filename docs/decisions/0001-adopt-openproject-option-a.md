@@ -11,8 +11,9 @@
 `c3-domain-manager` discovers C3 source files by hardcoding section-folder joins
 (`path.join(rootDir, "eventSheets")`, `path.join(rootDir, "layouts")`,
 `path.join(rootDir, "scripts")`) in `src/domain/domainGenerator.ts`
-(`computeDomainData`, `findScriptEntries`) and `src/domain/editorValidation.ts`,
-then calling the free functions `find_all_eventsheets_path` /
+(`computeDomainData`, `findScriptEntries`), `src/domain/editorValidation.ts`,
+and `src/domain/domainAnalysis.ts` (`listUncategorized`), then — for the
+discovery path — calling the free functions `find_all_eventsheets_path` /
 `find_all_layouts_path`.
 
 The `@genvidtech/c3source` 1.7.0 bump completes the `C3Project` handle's section
@@ -27,10 +28,13 @@ evaluation of three adoption options.
 ## Decision
 
 **Option A — call `openProject(rootDir)` locally at the top of each pure
-function** (`computeDomainData`, `validateEditorStrictness`) and use
-`project.findAllEventSheets()` / `project.findAllLayouts()` /
-`project.scriptsDir`. The pure functions keep their existing `rootDir`-first
-signatures and their position on the `src/index.ts` public surface is unchanged.
+function** (`computeDomainData`, `validateEditorStrictness`, and
+`listUncategorized`) and use `project.findAllEventSheets()` /
+`project.findAllLayouts()` / `project.scriptsDir` (the discovery path), or the
+`project.eventSheetsDir` / `layoutsDir` / `scriptsDir` directory fields where a
+function does its own walk (`listUncategorized`'s `collectFiles`). The pure
+functions keep their existing `rootDir`-first signatures and their position on
+the `src/index.ts` public surface is unchanged.
 
 ## Alternatives Considered
 
@@ -48,7 +52,10 @@ the handle's walkers, and offers almost no improvement over the status quo.
 ## Consequences
 
 - Removes all hardcoded C3 section-folder name literals from this repo; the folder
-  facts now live in `c3source`.
+  facts now live in `c3source`. (`listUncategorized`'s swap is purely cosmetic —
+  its `collectFiles`/`collectRootTsFiles` walkers already return `[]` on a missing
+  dir, so only the discovery path in `computeDomainData` gains the behavioural fix
+  below.)
 - **Behavioral improvement (deliberate):** a project missing `eventSheets/` or
   `layouts/` previously caused `computeDomainData` to throw `ENOENT`;
   `findAllEventSheets()` / `findAllLayouts()` return `[]` instead, so analysis
