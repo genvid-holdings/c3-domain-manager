@@ -1,8 +1,7 @@
 import * as fs from "node:fs";
 import path from "node:path";
 import {
-  find_all_eventsheets_path,
-  find_all_layouts_path,
+  openProject,
   extractFunctions,
   extractIncludes,
   visitEvents,
@@ -124,9 +123,10 @@ export function computeDomainData(
   log: Logger = () => {},
 ): ComputeDomainDataResult {
   // Find all files
-  const eventSheetPaths = find_all_eventsheets_path(path.join(rootDir, "eventSheets"));
-  const layoutPaths = find_all_layouts_path(path.join(rootDir, "layouts"));
-  const scriptEntries = findScriptEntries(path.join(rootDir, "scripts"));
+  const project = openProject(rootDir);
+  const eventSheetPaths = project.findAllEventSheets();
+  const layoutPaths = project.findAllLayouts();
+  const scriptEntries = findScriptEntries(project.scriptsDir);
 
   log(
     `Found ${eventSheetPaths.length} eventSheets, ${layoutPaths.length} layouts, ${scriptEntries.length} script entries.`,
