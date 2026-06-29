@@ -5,7 +5,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { computeDomainData, loadConfig, extractEventVarDecls, extractEventVarRefs } from "../../src/domain/domainGenerator.js";
 import type { DomainConfig } from "../../src/domain/types.js";
-import type { EventSheet } from "@genvid/c3source";
+import type { EventSheet } from "@genvidtech/c3source";
 
 /** Create a file (and its parent directories) in the temp dir. */
 function createFile(rootDir: string, relativePath: string, content = ""): void {

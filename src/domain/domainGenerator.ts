@@ -9,8 +9,8 @@ import {
   hasConditions,
   hasActions,
   getEventVarReferenceName,
-} from "@genvid/c3source";
-import type { EventSheet, EventSheetEvent, Layout, FunctionParameter } from "@genvid/c3source";
+} from "@genvidtech/c3source";
+import type { EventSheet, EventSheetEvent, Layout, FunctionParameter } from "@genvidtech/c3source";
 import { classifyFile } from "./classification.js";
 import { formatDomainIndex as formatDomainIndexPage, formatDomainPage } from "./formatting.js";
 import type { DomainConfig, DomainData, FunctionDef } from "./types.js";
