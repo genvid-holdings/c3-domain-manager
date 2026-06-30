@@ -21,7 +21,7 @@ npm run typecheck   # tsc -p tsconfig.test.json --noEmit (type-checks src AND te
 
 Run a single test file: `npx mocha --timeout 5000 --import=tsx --require ./test/setup.ts test/domain/health.test.ts --exit`
 
-Note: both local development and CI use `npm` for these script names. CI runs the shared `genvid-public-ci` Node gate (`.github/workflows/ci.yml`).
+Note: both local development and CI use `npm` for these script names. CI runs the shared `public-github-actions` Node gate (`.github/workflows/ci.yml`).
 
 **Cutting a release:** see `docs/releasing.md`. In short — bump the version in `package.json` + `package-lock.json`, commit `chore: Release X.Y.Z`, push a lightweight `vX.Y.Z` tag; the tag push triggers `.github/workflows/publish.yml` (OIDC trusted publish to npm).
 
