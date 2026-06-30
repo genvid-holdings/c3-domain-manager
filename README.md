@@ -24,13 +24,13 @@ Domain-driven design analysis for Construct 3 projects. Classifies source files 
 Install from npm:
 
 ```bash
-npm install @genvid/c3-domain-manager
+npm install @genvidtech/c3-domain-manager
 ```
 
 Or run the CLI without installing:
 
 ```bash
-npx @genvid/c3-domain-manager generate
+npx @genvidtech/c3-domain-manager generate
 ```
 
 ## Quick start
@@ -72,7 +72,7 @@ At the root of your Construct 3 project:
 Run from your project root:
 
 ```bash
-npx @genvid/c3-domain-manager generate
+npx @genvidtech/c3-domain-manager generate
 ```
 
 This writes markdown pages to `extracted/domain-index/`.
@@ -80,7 +80,7 @@ This writes markdown pages to `extracted/domain-index/`.
 ### 3. Check coverage
 
 ```bash
-npx @genvid/c3-domain-manager list-uncategorized
+npx @genvidtech/c3-domain-manager list-uncategorized
 ```
 
 Lists files not covered by any domain mapping.
@@ -114,7 +114,7 @@ The MCP server exposes 13 tools over stdio, suitable for use with Claude or any 
 ### Starting the server
 
 ```bash
-npx @genvid/c3-domain-manager server
+npx @genvidtech/c3-domain-manager server
 ```
 
 Or in an MCP client config (e.g. Claude Desktop `claude_desktop_config.json`):
@@ -124,7 +124,7 @@ Or in an MCP client config (e.g. Claude Desktop `claude_desktop_config.json`):
   "mcpServers": {
     "c3-domain-manager": {
       "command": "npx",
-      "args": ["@genvid/c3-domain-manager", "server"],
+      "args": ["@genvidtech/c3-domain-manager", "server"],
       "cwd": "/path/to/your/c3-project"
     }
   }
@@ -184,7 +184,7 @@ import {
   listStaleOverrides,
   validateEditorStrictness,
   formatEditorStrictnessReport,
-} from "@genvid/c3-domain-manager";
+} from "@genvidtech/c3-domain-manager";
 ```
 
 Key exports from `src/index.ts`:

@@ -1,6 +1,6 @@
 # Releasing
 
-How to cut a new release of `@genvid/c3-domain-manager`. Routine releases are
+How to cut a new release of `@genvidtech/c3-domain-manager`. Routine releases are
 fully self-service — this repo is already wired for OIDC **trusted publishing**,
 so there is no npm token to manage and nothing in the `publish-npm-package` skill
 to re-run (that skill is one-time setup, not per-release).
@@ -73,27 +73,27 @@ git push origin vX.Y.Z                    # this push triggers the publish workf
 
    ```bash
    gh run list --workflow Publish --limit 1
-   npm view @genvid/c3-domain-manager version   # should show the new version as latest
+   npm view @genvidtech/c3-domain-manager version   # should show the new version as latest
    ```
 
 6. **Smoke-check the CLI version** (catches the class of bug that motivated this doc):
 
    ```bash
-   npx -y @genvid/c3-domain-manager@X.Y.Z --version   # prints X.Y.Z, not "unknown"
+   npx -y @genvidtech/c3-domain-manager@X.Y.Z --version   # prints X.Y.Z, not "unknown"
    ```
 
 7. **File the downstream plugin update request.** The `genvid-c3` plugin
-   (`genvid-holdings/claude-code-plugin-genvid-c3`) **pins** this package in
+   (`GenvidTechnologies/claude-code-plugin-gvt-construct3`) **pins** this package in
    `plugin/.claude-plugin/plugin.json` (`mcpServers.c3-domain-manager`, e.g.
-   `@genvid/c3-domain-manager@0.3.0`) and references the pinned version in its
+   `@genvidtech/c3-domain-manager@0.3.0`) and references the pinned version in its
    `c3-explorer` / `c3-implementer` agent docs. Every publish here therefore needs a
    follow-up issue there to bump the pin and reconcile the tool surface. Open one with
-   `gh issue create --repo genvid-holdings/claude-code-plugin-genvid-c3`, and call out
+   `gh issue create --repo GenvidTechnologies/claude-code-plugin-gvt-construct3`, and call out
    any **MCP tool-surface change** (a tool added/renamed/removed) — that repo runs
    `docs/tool-surface-reconciliation.md` and updates the `c3-explorer` `tools:`
    allow-list off it. Example: 0.4.0 added the `validate-editor` READ_ONLY tool, so the
    request flagged it for the allow-list (issue
-   [#12](https://github.com/genvid-holdings/claude-code-plugin-genvid-c3/issues/12)).
+   [#12](https://github.com/GenvidTechnologies/claude-code-plugin-gvt-construct3/issues/12)).
 
 ## Notes & gotchas
 
