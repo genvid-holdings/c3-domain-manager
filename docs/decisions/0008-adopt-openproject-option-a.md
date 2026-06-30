@@ -1,4 +1,4 @@
-# ADR 0001: Adopt `C3Project`/`openProject` for C3 file discovery (Option A)
+# ADR 0008: Adopt `C3Project`/`openProject` for C3 file discovery (Option A)
 
 **Status:** Accepted
 **Date:** 2026-06-29
