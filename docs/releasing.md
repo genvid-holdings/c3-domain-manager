@@ -67,7 +67,7 @@ git push origin vX.Y.Z                    # this push triggers the publish workf
    ```
 
 5. **Watch the publish.** The tag push fires `.github/workflows/publish.yml`
-   (trigger: `push` on `v*.*.*`). It runs the shared `genvid-public-ci` node-gate,
+   (trigger: `push` on `v*.*.*`). It runs the shared `public-github-actions` node-gate,
    then publishes to npm via OIDC trusted publishing (automatic provenance, no
    stored token). Confirm:
 
